@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 require('dotenv').config()
 const port = process.env.PORT || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 app.use(cors());
 app.use(express.json());
@@ -30,14 +30,27 @@ async function run() {
 
     const historicalArtifactsCollection = client.db("hATracker").collection("historicalArtifacts");
 
-    app.get('/historicalArtifacts', async(req, res) => {
+    app.get('/historicalArtifacts', async (req, res) => {
       const cursor = historicalArtifactsCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     })
 
+    app.get('/historicalArtifacts/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await historicalArtifactsCollection.findOne(query);
+      res.send(result);
+    })
 
-    
+    app.post('/historicalArtifacts', async(req, res) => {
+      const newArtifact = req.body;
+      const result = await historicalArtifactsCollection.insertOne(newArtifact);
+      res.send(result);
+    })
+
+
+
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
@@ -47,9 +60,9 @@ run().catch(console.dir);
 
 
 app.get('/', (req, res) => {
-    res.send("We are tracking historical artifacts.");
+  res.send("We are tracking historical artifacts.");
 })
 
 app.listen(port, () => {
-    console.log(`Historical artifacts are being tracked on: ${port}`);
+  console.log(`Historical artifacts are being tracked on: ${port}`);
 })

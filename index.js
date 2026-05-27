@@ -31,7 +31,12 @@ async function run() {
     const historicalArtifactsCollection = client.db("hATracker").collection("historicalArtifacts");
 
     app.get('/historicalArtifacts', async (req, res) => {
-      const cursor = historicalArtifactsCollection.find();
+      const email = req.query.email;
+      let query = {};
+      if (email) {
+        query = { adder_email: email };
+      }
+      const cursor = historicalArtifactsCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     })
@@ -43,7 +48,7 @@ async function run() {
       res.send(result);
     })
 
-    app.post('/historicalArtifacts', async(req, res) => {
+    app.post('/historicalArtifacts', async (req, res) => {
       const newArtifact = req.body;
       const result = await historicalArtifactsCollection.insertOne(newArtifact);
       res.send(result);

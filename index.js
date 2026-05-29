@@ -28,7 +28,8 @@ async function run() {
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
-    const historicalArtifactsCollection = client.db("hATracker").collection("historicalArtifacts");
+    const historicalArtifactCollection = client.db("hATracker").collection("historicalArtifacts");
+    const likedHistoricalArtifactCollection = client.db("hATracker").collection("liked_historical_artifacts");
 
     app.get('/historicalArtifacts', async (req, res) => {
       const email = req.query.email;
@@ -36,7 +37,7 @@ async function run() {
       if (email) {
         query = { adder_email: email };
       }
-      const cursor = historicalArtifactsCollection.find(query);
+      const cursor = historicalArtifactCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     })
@@ -44,13 +45,29 @@ async function run() {
     app.get('/historicalArtifacts/:id', async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
-      const result = await historicalArtifactsCollection.findOne(query);
+      const result = await historicalArtifactCollection.findOne(query);
       res.send(result);
     })
 
     app.post('/historicalArtifacts', async (req, res) => {
       const newArtifact = req.body;
-      const result = await historicalArtifactsCollection.insertOne(newArtifact);
+      const result = await historicalArtifactCollection.insertOne(newArtifact);
+
+      // let newCount = 0;
+      // if(newArtifact.like_count) {
+      //   newCount = newCount + 1;
+      // }
+      // else {
+      //   newCount = 1;
+      // }
+
+      res.send(result);
+    })
+
+    // Liked Historical Artifacts APIs
+    app.post('/liked-historical-artifacts', async (req, res) => {
+      const newLikedArtifact = req.body;
+      const result = await likedHistoricalArtifactCollection.insertOne(newLikedArtifact);
       res.send(result);
     })
 

@@ -65,6 +65,26 @@ async function run() {
     })
 
     // Liked Historical Artifacts APIs
+    app.get('/liked-historical-artifact', async (req, res) => {
+      const email = req.query.email;
+      const query = { liked_by: email }
+      const result = await likedHistoricalArtifactCollection.find(query).toArray();
+
+      // fokira way to aggregate data
+      for (const liking of result) {
+        console.log(liking.artifact_id)
+        const query1 = { _id: new ObjectId(liking.artifact_id) }
+        const artifact = await historicalArtifactCollection.findOne(query1);
+        if (artifact) {
+          liking.artifact_name = artifact.artifact_name;
+          liking.artifact_image = artifact.artifact_image;
+          liking.like_count = artifact.like_count;
+          liking.artifact_type = artifact.artifact_type;
+        }
+      }
+      res.send(result);
+    })
+
     app.post('/liked-historical-artifacts', async (req, res) => {
       const newLikedArtifact = req.body;
       const result = await likedHistoricalArtifactCollection.insertOne(newLikedArtifact);

@@ -53,14 +53,6 @@ async function run() {
       const newArtifact = req.body;
       const result = await historicalArtifactCollection.insertOne(newArtifact);
 
-      // let newCount = 0;
-      // if(newArtifact.like_count) {
-      //   newCount = newCount + 1;
-      // }
-      // else {
-      //   newCount = 1;
-      // }
-
       res.send(result);
     })
 
@@ -88,6 +80,30 @@ async function run() {
     app.post('/liked-historical-artifacts', async (req, res) => {
       const newLikedArtifact = req.body;
       const result = await likedHistoricalArtifactCollection.insertOne(newLikedArtifact);
+
+      // Not the best way (use aggregate)
+      const id = newLikedArtifact.artifact_id;
+      const query = { _id: new ObjectId(id) }
+      const artifact = await historicalArtifactCollection.findOne(query);
+     
+      // Now update the artifact info
+
+      let newCount = 0;
+      if (artifact.like_count) {
+        newCount = artifact.like_count + 1;
+      }
+      else {
+        newCount = 1;
+      }
+
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          like_count: newCount
+        }
+      }
+      const updateResult = await historicalArtifactCollection.updateOne(filter, updatedDoc);
+
       res.send(result);
     })
 

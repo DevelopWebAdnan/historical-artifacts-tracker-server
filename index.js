@@ -1,12 +1,35 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const app = express();
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173"],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
+
+const verifyToken = (req, res, next) => {
+  console.log('In the verify token middleware', req.cookies)
+  const token = req?.cookies?.token;
+
+  if (!token) {
+    return res.status(401).send({ message: 'Unauthorized Access' });
+  }
+
+  // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+  //   if (err) {
+  //     return res.status(401).send({ message: "Unauthorized Access" });
+  //   }
+  //   req.user = decoded;
+  // })
+  next();
+}
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.wy5hpga.mongodb.net/?appName=Cluster0`;
@@ -31,12 +54,32 @@ async function run() {
     const historicalArtifactCollection = client.db("hATracker").collection("historicalArtifacts");
     const likedHistoricalArtifactCollection = client.db("hATracker").collection("liked_historical_artifacts");
 
+    // Auth related APIs
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '5h' });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    })
+
+    // Historical artifacts related APIs
     app.get('/historicalArtifacts', async (req, res) => {
+      console.log('Now in the API callback.');
+
+      // if(req.user.email !== req.query.email) {
+      //   return res.status(403).send({message: "Forbidden Access"});
+      // }
+
       const email = req.query.email;
       let query = {};
       if (email) {
         query = { adder_email: email };
       }
+
       const cursor = historicalArtifactCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
@@ -57,7 +100,7 @@ async function run() {
     })
 
     // Liked Historical Artifacts APIs
-    app.get('/liked-historical-artifact', async (req, res) => {
+    app.get('/liked-historical-artifact', verifyToken, async (req, res) => {
       const email = req.query.email;
       const query = { liked_by: email }
       const result = await likedHistoricalArtifactCollection.find(query).toArray();
@@ -85,7 +128,7 @@ async function run() {
       const id = newLikedArtifact.artifact_id;
       const query = { _id: new ObjectId(id) }
       const artifact = await historicalArtifactCollection.findOne(query);
-     
+
       // Now update the artifact info
 
       let newCount = 0;

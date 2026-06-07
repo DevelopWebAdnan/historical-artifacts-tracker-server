@@ -85,14 +85,14 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/historicalArtifacts/:id', async (req, res) => {
+    app.get('/historicalArtifacts/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await historicalArtifactCollection.findOne(query);
       res.send(result);
     })
 
-    app.post('/historicalArtifacts', async (req, res) => {
+    app.post('/historicalArtifacts', verifyToken, async (req, res) => {
       const newArtifact = req.body;
       const result = await historicalArtifactCollection.insertOne(newArtifact);
 

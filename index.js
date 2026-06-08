@@ -15,19 +15,20 @@ app.use(express.json());
 app.use(cookieParser());
 
 const verifyToken = (req, res, next) => {
-  console.log('In the verify token middleware', req.cookies)
-  const token = req?.cookies?.token;
+  // console.log('In the verify token middleware', req.cookies)
+  const token = req.cookies?.token;
 
   if (!token) {
     return res.status(401).send({ message: 'Unauthorized Access' });
   }
 
-  // jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-  //   if (err) {
-  //     return res.status(401).send({ message: "Unauthorized Access" });
-  //   }
-  //   req.user = decoded;
-  // })
+  // verify token
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "Unauthorized Access" });
+    }
+    req.user = decoded;
+  })
   next();
 }
 
@@ -55,23 +56,33 @@ async function run() {
     const likedHistoricalArtifactCollection = client.db("hATracker").collection("liked_historical_artifacts");
 
     // Auth related APIs
-    app.post('/jwt', async (req, res) => {
+    app.post('/jwt', (req, res) => {
       const user = req.body;
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '5h' });
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10h' });
       res
         .cookie("token", token, {
           httpOnly: true,
           secure: false,
         })
         .send({ success: true });
-    })
+    });
+
+    app.post('/logout', (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: false
+        })
+        .send({ success: true })
+    });
 
     // Historical artifacts related APIs
     app.get('/historicalArtifacts', async (req, res) => {
-      console.log('Now in the API callback.');
 
-      // if(req.user.email !== req.query.email) {
-      //   return res.status(403).send({message: "Forbidden Access"});
+      // console.log(req.cookies?.token);
+      // if token email !== query email
+      // if (req.user.email !== req.query.email) {
+      //   return res.status(403).send({ message: "Forbidden Access" });
       // }
 
       const email = req.query.email;
@@ -101,7 +112,15 @@ async function run() {
 
     // Liked Historical Artifacts APIs
     app.get('/liked-historical-artifact', verifyToken, async (req, res) => {
+      
+      console.log(req.cookies?.token);
+      // if token email !== query email
+      if (req.user.email !== req.query.email) {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+      
       const email = req.query.email;
+
       const query = { liked_by: email }
       const result = await likedHistoricalArtifactCollection.find(query).toArray();
 

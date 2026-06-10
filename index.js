@@ -8,7 +8,11 @@ const port = process.env.PORT || 5000;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 app.use(cors({
-  origin: ["http://localhost:5173"],
+  origin: [
+    "http://localhost:5173",
+    "https://historical-artifacts-tra-28e05.web.app",
+    "https://historical-artifacts-tra-28e05.firebaseapp.com"
+  ],
   credentials: true
 }));
 app.use(express.json());
@@ -47,10 +51,10 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
 
     const historicalArtifactCollection = client.db("hATracker").collection("historicalArtifacts");
     const likedHistoricalArtifactCollection = client.db("hATracker").collection("liked_historical_artifacts");
@@ -62,7 +66,9 @@ async function run() {
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+
         })
         .send({ success: true });
     });
@@ -71,7 +77,9 @@ async function run() {
       res
         .clearCookie("token", {
           httpOnly: true,
-          secure: false
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+
         })
         .send({ success: true })
     });
@@ -85,12 +93,22 @@ async function run() {
       //   return res.status(403).send({ message: "Forbidden Access" });
       // }
 
-      const email = req.query.email;
-      let query = {};
-      if (email) {
-        query = { adder_email: email };
-      }
+      // const email = req.query.email;
+      // let query = {};
+      // if (email) {
+      //   query = { adder_email: email };
+      // }
 
+      // const cursor = historicalArtifactCollection.find(query);
+      const cursor = historicalArtifactCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+
+    app.get('/myHistoricalArtifacts/:email', verifyToken, async (req, res) => {
+      const email = req.params.email;
+      // console.log('email from params', email);
+      const query = { adder_email: email };
       const cursor = historicalArtifactCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
@@ -110,15 +128,21 @@ async function run() {
       res.send(result);
     })
 
+    app.delete('/myHistoricalArtifacts/:email/:id', async (req, res) => {
+      const email = req.params.email;
+      const id = req.params.id;
+      console.log(email, id);
+    })
+
     // Liked Historical Artifacts APIs
     app.get('/liked-historical-artifact', verifyToken, async (req, res) => {
-      
+
       console.log(req.cookies?.token);
       // if token email !== query email
       if (req.user.email !== req.query.email) {
         return res.status(403).send({ message: "Forbidden Access" });
       }
-      
+
       const email = req.query.email;
 
       const query = { liked_by: email }

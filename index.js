@@ -107,7 +107,6 @@ async function run() {
 
     app.get('/myHistoricalArtifacts/:email', verifyToken, async (req, res) => {
       const email = req.params.email;
-      // console.log('email from params', email);
       const query = { adder_email: email };
       const cursor = historicalArtifactCollection.find(query);
       const result = await cursor.toArray();
@@ -128,10 +127,32 @@ async function run() {
       res.send(result);
     })
 
-    app.delete('/myHistoricalArtifacts/:email/:id', async (req, res) => {
-      const email = req.params.email;
+    app.put('/historicalArtifact/:id', verifyToken, async (req, res) => {
       const id = req.params.id;
-      console.log(email, id);
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedArtifact = req.body;
+      const artifact = {
+        $set: {
+          artifact_name: updatedArtifact.artifact_name,
+          artifact_image: updatedArtifact.artifact_image,
+          artifact_type: updatedArtifact.artifact_type,
+          historical_context: updatedArtifact.historical_context,
+          created_at: updatedArtifact.created_at,
+          discovered_at: updatedArtifact.discovered_at,
+          discovered_by: updatedArtifact.discovered_by,
+          present_location: updatedArtifact.present_location
+        }
+      }
+      const result = await historicalArtifactCollection.updateOne(filter, artifact, options);
+      res.send(result);
+    })
+
+    app.delete('/historicalArtifact/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await historicalArtifactCollection.deleteOne(query);
+      res.send(result);
     })
 
     // Liked Historical Artifacts APIs

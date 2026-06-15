@@ -100,6 +100,14 @@ async function run() {
       // }
 
       // const cursor = historicalArtifactCollection.find(query);
+      const sortFields = { like_count: -1 };
+      const limitNum = 6;
+      const cursor = historicalArtifactCollection.find().sort(sortFields).limit(limitNum);
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+
+    app.get('/allHistoricalArtifacts', async(req, res) => {
       const cursor = historicalArtifactCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -200,14 +208,14 @@ async function run() {
 
       // let newCount = 0;
       // if (artifact.like_count) {
-        // if (isLiked === 'true') {
-        newCount = artifact.like_count + 1;
-        // }else {
-        //   newCount = artifact.like_count - 1;
-        // }
+      // if (isLiked === 'true') {
+      newCount = artifact.like_count + 1;
+      // }else {
+      //   newCount = artifact.like_count - 1;
+      // }
       // }
       // else {
-        // newCount = 1;
+      // newCount = 1;
       // }
 
       const filter = { _id: new ObjectId(id) };

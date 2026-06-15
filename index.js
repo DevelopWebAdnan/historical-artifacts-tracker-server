@@ -185,6 +185,9 @@ async function run() {
     })
 
     app.post('/liked-historical-artifacts', async (req, res) => {
+      // const isLiked = req.query.like;
+
+
       const newLikedArtifact = req.body;
       const result = await likedHistoricalArtifactCollection.insertOne(newLikedArtifact);
 
@@ -195,13 +198,17 @@ async function run() {
 
       // Now update the artifact info
 
-      let newCount = 0;
-      if (artifact.like_count) {
+      // let newCount = 0;
+      // if (artifact.like_count) {
+        // if (isLiked === 'true') {
         newCount = artifact.like_count + 1;
-      }
-      else {
-        newCount = 1;
-      }
+        // }else {
+        //   newCount = artifact.like_count - 1;
+        // }
+      // }
+      // else {
+        // newCount = 1;
+      // }
 
       const filter = { _id: new ObjectId(id) };
       const updatedDoc = {
@@ -214,6 +221,32 @@ async function run() {
       res.send(result);
     })
 
+    app.patch('/liked-historical-artifacts/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const artifact = await historicalArtifactCollection.findOne(filter);
+      // let newCount = 0;
+      // let newCount;
+      // if (artifact.like_count) {
+      // if (isLiked === 'true') {
+      // newCount = artifact.like_count + 1;
+      // }else {
+      newCount = artifact.like_count - 1;
+      // }
+      // }
+      // else {
+      //   newCount = 1;
+      // }
+
+      const updatedStatus = {
+        $set: {
+          like_count: newCount
+          // like_count: like_count - 1
+        }
+      }
+      const result = await historicalArtifactCollection.updateOne(filter, updatedStatus);
+      res.send(result);
+    })
 
 
   } finally {

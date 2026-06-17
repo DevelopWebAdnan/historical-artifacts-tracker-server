@@ -107,8 +107,19 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/allHistoricalArtifacts', async(req, res) => {
-      const cursor = historicalArtifactCollection.find();
+    app.get('/allHistoricalArtifacts', async (req, res) => {
+      const search = req.query.search;
+
+      let query = {};
+      if (search) {
+        query = {
+          artifact_name: {
+            $regex: search, $options: 'i'
+          }
+        };
+      }
+      
+      const cursor = historicalArtifactCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     })
